@@ -1,55 +1,83 @@
 function InstallAndImportModulesPSGallery {
-
     <#
-.SYNOPSIS
-    Validates, installs, and imports required PowerShell modules specified in a JSON file.
+    .SYNOPSIS
+    Validates, installs, and imports required PowerShell modules specified in a PSD1 file.
 
-.DESCRIPTION
-    This function reads the 'modules.json' file from the script's directory, validates the existence of the required modules,
+    .DESCRIPTION
+    This function reads the 'modules.psd1' file from the script's directory, validates the existence of the required modules,
     installs any that are missing, and imports the specified modules into the current session.
 
-.PARAMETER None
-    This function does not take any parameters.
+    .PARAMETER modulePsd1Path
+    The path to the modules.psd1 file.
 
-.NOTES
-    This function relies on a properly formatted 'modules.json' file in the script's root directory.
-    The JSON file should have 'requiredModules' and 'importedModules' arrays defined.
+    .EXAMPLE
+    InstallAndImportModulesPSGallery -modulePsd1Path "$PSScriptRoot\modules.psd1"
+    This example reads the 'modules.psd1' file, installs any missing required modules, and imports the specified modules.
 
-.EXAMPLE
-    InstallAndImportModules
-    This example reads the 'modules.json' file, installs any missing required modules, and imports the specified modules.
-#>
+    .NOTES
+    This function relies on a properly formatted 'modules.psd1' file in the script's root directory.
+    The PSD1 file should have 'RequiredModules', 'ImportedModules', and 'MyModules' arrays defined.
+    #>
 
-    # Define the path to the modules.json file
-    # $moduleJsonPath = "$PSScriptRoot/modules.json"
-
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory = $true)]
-        [string]$moduleJsonPath
+        [string]$modulePsd1Path
     )
-    
-    if (Test-Path -Path $moduleJsonPath) {
+
+    begin {
+        Write-EnhancedLog -Message "Starting InstallAndImportModulesPSGallery function" -Level "INFO"
+        Log-Params -Params $PSCmdlet.MyInvocation.BoundParameters
+
+        # Validate PSD1 file path
+        if (-not (Test-Path -Path $modulePsd1Path)) {
+            Write-EnhancedLog -Message "modules.psd1 file not found at path: $modulePsd1Path" -Level "ERROR"
+            throw "modules.psd1 file not found."
+        }
+
+        Write-EnhancedLog -Message "Found modules.psd1 file at path: $modulePsd1Path" -Level "INFO"
+    }
+
+    process {
         try {
-            # Read and convert JSON data from the modules.json file
-            $moduleData = Get-Content -Path $moduleJsonPath | ConvertFrom-Json
-            $requiredModules = $moduleData.requiredModules
-            $importedModules = $moduleData.importedModules
+            # Read and import PSD1 data
+            $moduleData = Import-PowerShellDataFile -Path $modulePsd1Path
+            $requiredModules = $moduleData.RequiredModules
+            $importedModules = $moduleData.ImportedModules
+            $myModules = $moduleData.MyModules
 
             # Validate, Install, and Import Modules
             if ($requiredModules) {
-                Install-Modules -Modules $requiredModules
-            }
-            if ($importedModules) {
-                Import-Modules -Modules $importedModules
+                Write-EnhancedLog -Message "Installing required modules: $($requiredModules -join ', ')" -Level "INFO"
+                foreach ($moduleName in $requiredModules) {
+                    Update-ModuleIfOldOrMissing -ModuleName $moduleName
+                }
             }
 
-            Write-EnhancedLog -Message "Modules installed and imported successfully." -Level "INFO" -ForegroundColor ([ConsoleColor]::Green)
+            if ($importedModules) {
+                Write-EnhancedLog -Message "Importing modules: $($importedModules -join ', ')" -Level "INFO"
+                foreach ($moduleName in $importedModules) {
+                    Import-Module -Name $moduleName -Force
+                }
+            }
+
+            if ($myModules) {
+                Write-EnhancedLog -Message "Importing custom modules: $($myModules -join ', ')" -Level "INFO"
+                foreach ($moduleName in $myModules) {
+                    Import-Module -Name $moduleName -Force
+                }
+            }
+
+            Write-EnhancedLog -Message "Modules installed and imported successfully." -Level "INFO"
         }
         catch {
-            Write-EnhancedLog -Message "Error processing modules.json: $_" -Level "ERROR" -ForegroundColor ([ConsoleColor]::Red)
+            Write-EnhancedLog -Message "Error processing modules.psd1: $_" -Level "ERROR"
+            Handle-Error -ErrorRecord $_
+            throw $_
         }
     }
-    else {
-        Write-EnhancedLog -Message "modules.json file not found." -Level "ERROR" -ForegroundColor ([ConsoleColor]::Red)
+
+    end {
+        Write-EnhancedLog -Message "InstallAndImportModulesPSGallery function execution completed." -Level "INFO"
     }
 }
