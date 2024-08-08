@@ -24,7 +24,7 @@ function Update-ModuleIfOldOrMissing {
     )
 
     begin {
-        Write-EnhancedLog -Message "Starting Update-ModuleIfOldOrMissing function for module: $ModuleName" -Level "INFO"
+        Write-EnhancedLog -Message "Starting Update-ModuleIfOldOrMissing function for module: $ModuleName" -Level "Notice"
         Log-Params -Params $PSCmdlet.MyInvocation.BoundParameters
     }
 
@@ -59,6 +59,6 @@ function Update-ModuleIfOldOrMissing {
     }
 
     end {
-        Write-EnhancedLog -Message "Update-ModuleIfOldOrMissing function execution completed for module: $ModuleName" -Level "INFO"
+        Write-EnhancedLog -Message "Update-ModuleIfOldOrMissing function execution completed for module: $ModuleName" -Level "Notice"
     }
 }

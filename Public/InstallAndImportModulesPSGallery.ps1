@@ -44,7 +44,7 @@ function InstallAndImportModulesPSGallery {
             $moduleData = Import-PowerShellDataFile -Path $modulePsd1Path
             $requiredModules = $moduleData.RequiredModules
             $importedModules = $moduleData.ImportedModules
-            $myModules = $moduleData.MyModules
+            # $myModules = $moduleData.MyModules
 
             # Validate, Install, and Import Modules
             if ($requiredModules) {
